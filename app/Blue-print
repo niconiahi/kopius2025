@@ -1,0 +1,9 @@
+the idea in this project is to create a pokedex where I can filter and save the pokemons i will fetch and store from an api.
+We essentialy would need 3 list, one for the pokemons selcted and one that holds the pokemons i receive from the api [maybe two arrays].
+we would need an array to get all the types that pokemons can be.
+this api will have on each pokemon and URL with more info about that pokemon in particular.
+!!!UNDONE!!!i will need to think how to store the info from the pokemons after fetching it so that i can filter it By Id. (Compose a new array of objcts with pokemon id,name,types,Img).
+We would need a Display cards Component to arrange the two arrays of cards nicely.
+We would need a card component that renders the Img, Types, and name of the Pokemons that will be passed as prop.
+We would need two filters: one should be a state that is a (form?) to compeare the serch bar with names as its written, the other an array of selected types(from the types array) that will filter the results based on the two filters.
+
