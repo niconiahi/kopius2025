@@ -1,9 +1,43 @@
 import { useState, useEffect } from "react";
 
+const ListFilter = ({ pokeTypes, setChosenType }) => {
+  const handleOnChange = (e) => {
+    setChosenType(e.target.value);
+  };
+
+  return (
+    <select onChange={handleOnChange}>
+      {pokeTypes.map((type) => {
+        return (
+          <option key={`type-${type}`} value={type}>
+            {type}
+          </option>
+        );
+      })}
+    </select>
+  );
+};
+
+const TextInput = ({ placeHolder, text, setText }) => {
+  const handleOnChange = (e) => {
+    setText(e.target.value);
+  };
+  return (
+    <input
+      type="text"
+      value={text}
+      placeholder={placeHolder}
+      onChange={handleOnChange}
+    />
+  );
+};
+
 export default function () {
   // Declaro los dos estados que traeran los pokemons y los tipos de la api
   const [pokemon, setPokemon] = useState([]);
   const [pokeTypes, setPokeTypes] = useState([]);
+  const [text, setText] = useState("");
+  const [chosenType, setChosenType] = useState();
 
   // Fetcheo y asigno al estado los nombres, id y img al estado correspondiente
   useEffect(() => {
@@ -33,8 +67,7 @@ export default function () {
       setPokemon(pokeArray);
     }
     runPokemons();
-  });
-  // venasour,butterfree,charizard.
+  }, []);
   // Fetcheo y asigno al estado los types al estado correspondiente
   useEffect(() => {
     async function runTypes() {
@@ -50,7 +83,27 @@ export default function () {
       setPokeTypes(typesArray);
     }
     runTypes();
-  });
+  }, []);
 
-  return <h1>Manu</h1>;
+  console.log("chosenType", chosenType);
+  // console.log(pokemon);
+  // console.log(pokeTypes);
+  // console.log(text);
+  return (
+    <>
+      <div>
+        <ListFilter pokeTypes={pokeTypes} setChosenType={setChosenType} />
+        <TextInput
+          placeHolder="Pokemon Search Bar"
+          setText={setText}
+          text={text}
+        />
+      </div>
+      <ul>
+        {pokemon.map((pokeObj) => (
+          <li key={pokeObj.id}>{pokeObj.name}</li>
+        ))}
+      </ul>
+    </>
+  );
 }
