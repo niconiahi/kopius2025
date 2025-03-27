@@ -1,130 +1,118 @@
 import { useState, useEffect } from "react";
 
 export default function () {
-  // Declaro los dos estados que traeran los pokemons y los tipos de la api
-  const [pokemons, setpokemons] = useState([]);
-  const [pokeTypes, setPokeTypes] = useState([]);
-  const [text, setText] = useState("");
+  const [pokemons, setPokemons] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [query, setQuery] = useState("");
   const [chosenType, setChosenType] = useState();
-  const [chosenPoke, setChosenPoke] = useState([]);
+  const [chosenPokeIds, setChosenPokeIds] = useState([]);
 
-  // Fetcheo y asigno al estado los nombres, id y img al estado correspondiente
   useEffect(() => {
-    async function runPokemons() {
+    async function run() {
       const response = await fetch(
         "https://pokeapi.co/api/v2/pokemon?limit=20",
       );
       const data = await response.json();
-      const _pokemons = data.results;
-      const pokeArray = [];
+      const nextPokemons = [];
       await Promise.all(
-        _pokemons.map(async (poke) => {
-          const detailsNoJson = await fetch(poke.url);
-          const detail = await detailsNoJson.json();
-          const detailTypes = [];
-          detail.types.forEach((type) => {
-            detailTypes.push(type.type.name);
-          });
-          pokeArray.push({
-            id: detail.id,
-            name: detail.name,
-            type: detailTypes,
-            img: detail.sprites.front_shiny,
+        data.results.map(async (poke) => {
+          const response = await fetch(poke.url);
+          const data = await response.json();
+          const types = [];
+          for (const type of data.types) {
+            types.push(type.type.name);
+          }
+          nextPokemons.push({
+            id: data.id,
+            name: data.name,
+            types,
+            img: data.sprites.front_shiny,
           });
         }),
       );
-      setpokemons(pokeArray);
+      setPokemons(nextPokemons);
     }
-    runPokemons();
+    run();
   }, []);
-  // Fetcheo y asigno al estado los types al estado correspondiente
+
   useEffect(() => {
-    async function runTypes() {
-      const typesNojason = await fetch("https://pokeapi.co/api/v2/type");
-      const types = await typesNojason.json();
-      const data = types.results;
-      const typesArray = [];
-      await Promise.all(
-        data.map(async (response) => {
-          typesArray.push(response.name);
-        }),
-      );
-      setPokeTypes(typesArray);
+    async function run() {
+      const response = await fetch("https://pokeapi.co/api/v2/type");
+      const data = await response.json();
+      const nextTypes = [];
+      data.results.map(async (type) => {
+        nextTypes.push(type.name);
+      });
+      setTypes(nextTypes);
     }
-    runTypes();
+    run();
   }, []);
-  //UseEffect de la date y el cookie
+
   useEffect(() => {
     const date = new Date();
     date.setDate(date.getDate() + 3);
     const expires = date.toUTCString();
-    const stringChosens = JSON.stringify(chosenPoke);
-    document.cookie = `pokedex=${stringChosens}; expires=${expires}; path=/pokedex`;
-  }, [chosenPoke]);
-  // console.log("", chosenType);
-  // console.log(pokemons);
-  // console.log(pokeTypes);
-  // console.log(text);
-  const filteredPoke = pokemons.filter((pokeObj) => {
-    if (text) {
-      return pokeObj.name.startsWith(text);
-    }
-    return true;
-  });
+    const serialized = JSON.stringify(chosenPokeIds);
+    document.cookie = `pokedex=${serialized}; expires=${expires}; path=/pokedex`;
+  }, [chosenPokeIds]);
 
-  const filteredByType = filteredPoke.filter((pokeObj) => {
-    if (!chosenType) {
+  const showingPokemons = pokemons
+    .filter((pokemon) => {
+      if (query) {
+        return pokemon.name.startsWith(query);
+      }
       return true;
-    }
-    return pokeObj.type.includes(chosenType);
-  });
-  // console.log("filteredPoke", filteredPoke);
-  // console.log("filteredBytype", filteredByType);
-  console.log(chosenPoke);
-  // RETURN DE COMPONENTE PRINCIPAL
+    })
+    .filter((pokemon) => {
+      if (!chosenType) {
+        return true;
+      }
+      return pokemon.type.includes(chosenType);
+    });
+
   return (
     <div className="pokemon-app">
       <div className="filters">
-        <ListFilter pokeTypes={pokeTypes} setChosenType={setChosenType} />
-        <TextInput placeHolder="Search Pokémon" setText={setText} text={text} />
+        <ListFilter types={types} setChosenType={setChosenType} />
+        <TextInput
+          placeHolder="Search Pokémon"
+          setText={setQuery}
+          text={query}
+        />
       </div>
       <div className="pokemon-list">
         <ul>
-          {" "}
-          {filteredByType.map((pokeObj) => {
-            if (chosenPoke.includes(pokeObj.id)) {
-              return;
+          {showingPokemons.map((pokemon) => {
+            if (chosenPokeIds.includes(pokemon.id)) {
+              return null;
             }
             return (
-              <li key={pokeObj.id}>
-                {" "}
+              <li key={pokemon.id}>
                 <Card
-                  pokemon={pokeObj}
-                  setChosenPoke={setChosenPoke}
-                  chosenPoke={chosenPoke}
-                />{" "}
+                  pokemon={pokemon}
+                  setChosenPoke={setChosenPokeIds}
+                  chosenPoke={chosenPokeIds}
+                />
               </li>
             );
           })}
         </ul>
       </div>
-
       <div className="pokedex-list">
         <ul>
-          {filteredByType.map((pokeObj) => {
-            if (chosenPoke.includes(pokeObj.id)) {
+          {showingPokemons.map((pokemon) => {
+            if (chosenPokeIds.includes(pokemon.id)) {
               return (
-                <li key={pokeObj.id}>
-                  {" "}
+                <li key={pokemon.id}>
                   <Card
-                    pokemon={pokeObj}
-                    setChosenPoke={setChosenPoke}
-                    chosenPoke={chosenPoke}
-                  />{" "}
+                    pokemon={pokemon}
+                    setChosenPoke={setChosenPokeIds}
+                    chosenPoke={chosenPokeIds}
+                  />
                 </li>
               );
             }
-            return;
+            return null;
           })}
         </ul>
       </div>
@@ -132,14 +120,14 @@ export default function () {
   );
 }
 
-const ListFilter = ({ pokeTypes, setChosenType }) => {
-  const handleOnChange = (e) => {
-    setChosenType(e.target.value);
-  };
-
+const ListFilter = ({ types, setChosenType }) => {
   return (
-    <select onChange={handleOnChange}>
-      {pokeTypes.map((type) => {
+    <select
+      onChange={(event) => {
+        setChosenType(event.target.value);
+      }}
+    >
+      {types.map((type) => {
         return (
           <option key={`type-${type}`} value={type}>
             {type}
@@ -149,45 +137,45 @@ const ListFilter = ({ pokeTypes, setChosenType }) => {
     </select>
   );
 };
-const Card = ({ pokemon, setChosenPoke, chosenPoke }) => {
-  const handleOnClick = (e) => {
-    if (chosenPoke.includes(pokemon.id)) {
-      setChosenPoke(
-        chosenPoke.filter((id) => {
+
+const Card = ({ pokemon, setChosenPokeIds, chosenPokeIds }) => {
+  const handleOnClick = () => {
+    if (chosenPokeIds.includes(pokemon.id)) {
+      setChosenPokeIds((prevChosenPokeIds) => {
+        return prevChosenPokeIds.filter((id) => {
           if (pokemon.id === id) {
             return false;
           }
           return true;
-        }),
-      );
-      return;
+        });
+      });
+    } else {
+      setChosenPokeIds((prevChosenPokeIds) => {
+        return [...prevChosenPokeIds, pokemon.id];
+      });
     }
-    setChosenPoke(() => {
-      return [...chosenPoke, pokemon.id];
-    });
   };
   return (
     <div key={pokemon.id} className="card">
       <img src={pokemon.img} alt={`sprite of ${pokemon.name}`} />
       <p>{pokemon.name}</p>
-      <p>Type: {pokemon.type}</p>
+      <p>Type: {pokemon.types}</p>
       <button type="button" onClick={handleOnClick}>
-        {chosenPoke.includes(pokemon.id) ? "-" : "+"}
+        {chosenPokeIds.includes(pokemon.id) ? "-" : "+"}
       </button>
     </div>
   );
 };
 
 const TextInput = ({ placeHolder, text, setText }) => {
-  const handleOnChange = (e) => {
-    setText(e.target.value);
-  };
   return (
     <input
       type="text"
       value={text}
       placeholder={placeHolder}
-      onChange={handleOnChange}
+      onChange={(event) => {
+        setText(event.target.value);
+      }}
     />
   );
 };
