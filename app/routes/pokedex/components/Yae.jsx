@@ -2,56 +2,46 @@ import { useState, useEffect } from "react";
 import "../styles/trying.css";
 
 export default function pokedex() {
-  const [pokemons, setPokemons] = useState([]); //array of pokemons
-  const [types, setTypes] = useState([]); //array of types of pokemon
-  const [search, setSearch] = useState(""); //to dynamic filter while writting
-  const [selectedType, setSelectedType] = useState(""); // to catch the type selected in the dropdown list
+  const [pokemon, setPokemons] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [search, setSearch] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedPokemonIds, setSelectedPokemonIds] = useState([]);
 
-  const [output, setOutput] = useState([]);
+  useEffect(() => {
+    const prevSelectedPokemonIds = getCookieValue("pokedex");
+    setSelectedPokemonIds(prevSelectedPokemonIds);
+  }, []);
 
-  //-------------------- COOKIES---------------------------
   useEffect(() => {
     const date = new Date();
     date.setDate(date.getDate() + 7);
     const expires = date.toUTCString();
-    document.cookie = `pokedex=${JSON.stringify(output)}; expires=${expires}; path=/pokede;`;
-    console.log("Pokédex:", document.cookie);
-  }, [output]);
+    document.cookie = `pokedex=${JSON.stringify(selectedPokemonIds)}; expires=${expires}; path=/;`;
+  }, [selectedPokemonIds]);
 
-  //--------------- FETCHING DATA -----------------------
   useEffect(() => {
     async function fetchPokemons() {
-      const data = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20")
+      return fetch("https://pokeapi.co/api/v2/pokemon?limit=20")
         .then((response) => {
           return response.json();
         })
         .then(async (data) => {
-          // console.log("data", data);
           const pokemons = [];
           await Promise.all(
             data.results.map(async (pokemon) => {
-              // console.log("pokemon", pokemon);
-              const pokeData = await fetch(pokemon.url);
-              const pokeDetails = await pokeData.json();
-              // console.log("pokedetails", pokeDetails);
-
-              // llamar endpoint de dtealle de pokemon
-              //construir el objeto
-              // sacar solamente la info que necesito (name, type,url)
-              //types es un array de tipos
-              const types = pokeDetails.types.map(
-                (typesName) => typesName.type.name,
-              );
+              const response = await fetch(pokemon.url);
+              const data = await response.json();
+              const types = data.types.map((typesName) => typesName.type.name);
               pokemons.push({
-                id: pokeDetails.id,
-                name: pokeDetails.name,
-                types: types, //variable para traer todos los tipos del pokemon
-                img: pokeDetails.sprites.front_shiny,
+                id: data.id,
+                name: data.name,
+                types: types,
+                img: data.sprites.front_shiny,
               });
-              pokemons.sort();
             }),
           );
-          // console.log("pokemons", pokemons);
+          pokemons.sort();
           setPokemons(pokemons);
         });
     }
@@ -69,8 +59,7 @@ export default function pokedex() {
     fetchTypes();
   }, []);
 
-  // ----------------- FILTER LOGIC ------------------
-  const filteredPokemons = pokemons
+  const showingPokemons = pokemon
     .filter((pokemon) => {
       if (!search) {
         return true;
@@ -84,51 +73,18 @@ export default function pokedex() {
       return byTypes.types.includes(selectedType);
     });
 
-  // -----------------------LOGIC OF OUTPUT----------------
-  const handleClick = (pokemons) => {
-    const exists = output.find((character) => character === pokemons.id);
-
-    if (exists) {
-      setOutput(output.filter((character) => character !== pokemons.id));
-      // console.log(`REMOVED: ${pokemons.name}`);
+  const handleClick = (pokemon) => {
+    const doesExist = selectedPokemonIds.find(
+      (pokemonId) => pokemonId === pokemon.id,
+    );
+    if (doesExist) {
+      setSelectedPokemonIds(
+        selectedPokemonIds.filter((pokemonId) => pokemonId !== pokemon.id),
+      );
     } else {
-      setOutput([...output, pokemons.id]);
-      // console.log(`ADDED: ${pokemons.name}`);
+      setSelectedPokemonIds([...selectedPokemonIds, pokemon.id]);
     }
   };
-  // -----------------------OUTPUT----------------
-  const pokemonList = (filteredPokemons, output, handleClick) => {
-    return filteredPokemons.map((pokemons) => {
-      const isSelected = output.find((character) => {
-        // console.log("CHARACTER", character);
-        // console.log("POKEMONS", pokemons);
-        return character === pokemons.id;
-      });
-      return (
-        <li key={`pokemon-${pokemons.id}`}>
-          {pokemons.name}
-          <img src={pokemons.img} alt={"Front of ${pokemon.name}"} />
-          <button
-            type="button"
-            onClick={() => handleClick(pokemons)}
-            className={isSelected ? "delete-button" : "add-button"}
-          >
-            {isSelected ? "DELETE" : "ADD"}
-          </button>
-        </li>
-      );
-    });
-  };
-
-  //--------------------CONTROL CENTER------------
-
-  // console.log("Tipos de Pokémon cargados:", types);
-  // console.log("Pokémon cargados:", pokemons);
-  // console.log("SEARCH:", search);
-  // console.log("FILTRO TYPES", selectedType);
-  // console.log("IMAGEN", pokemons.img);
-  // console.log("OUTPUT", output);
-  //--------------------CONTROLING THE LOGS--------------
 
   return (
     <>
@@ -161,8 +117,25 @@ export default function pokedex() {
             className="searchbar"
           />
           <ul>
-            {filteredPokemons.length > 0 ? (
-              pokemonList(filteredPokemons, output, handleClick)
+            {showingPokemons.length > 0 ? (
+              showingPokemons.map((pokemon) => {
+                const isSelected = selectedPokemonIds.find((pokemonId) => {
+                  return pokemonId === pokemon.id;
+                });
+                return (
+                  <li key={`pokemon-${pokemon.id}`}>
+                    {pokemon.name}
+                    <img src={pokemon.img} alt={"Front of ${pokemon.name}"} />
+                    <button
+                      type="button"
+                      onClick={() => handleClick(pokemon)}
+                      className={isSelected ? "delete-button" : "add-button"}
+                    >
+                      {isSelected ? "DELETE" : "ADD"}
+                    </button>
+                  </li>
+                );
+              })
             ) : (
               <p>No Pokémon found</p>
             )}
@@ -171,12 +144,11 @@ export default function pokedex() {
         <div className="output">
           <h2>Pokedex</h2>
           <ul>
-            {pokemons
+            {pokemon
               .filter((pokemon) => {
-                return output.includes(pokemon.id);
+                return selectedPokemonIds.includes(pokemon.id);
               })
               .map((pokemon) => {
-                // console.log("POKEMON", pokemon);
                 return (
                   <li key={`selected-pokemon-${pokemon.id}`}>
                     {pokemon.name}
@@ -189,4 +161,27 @@ export default function pokedex() {
       </div>
     </>
   );
+}
+
+function getCookieValue(cookieName) {
+  console.log("document.cookie", document.cookie);
+  const cookies = document.cookie
+    .split(";")
+    .map((cookie) => {
+      return cookie.trim();
+    })
+    .map((cookie) => {
+      return cookie.split("=");
+    });
+  const cookie = cookies.find(([name]) => {
+    return name === cookieName;
+  });
+  if (!cookie) {
+    return null;
+  }
+  const serialized = cookie[1];
+  if (serialized.startsWith("[")) {
+    return JSON.parse(serialized);
+  }
+  throw new Error("not handled");
 }
