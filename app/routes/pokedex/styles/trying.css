@@ -1,0 +1,15 @@
+* {
+  margin: 0;
+}
+.album {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.delete-button {
+  color: red;
+}
+
+.add-button {
+  color: green;
+}
