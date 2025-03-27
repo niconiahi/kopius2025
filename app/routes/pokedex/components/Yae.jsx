@@ -162,26 +162,3 @@ export default function pokedex() {
     </>
   );
 }
-
-function getCookieValue(cookieName) {
-  console.log("document.cookie", document.cookie);
-  const cookies = document.cookie
-    .split(";")
-    .map((cookie) => {
-      return cookie.trim();
-    })
-    .map((cookie) => {
-      return cookie.split("=");
-    });
-  const cookie = cookies.find(([name]) => {
-    return name === cookieName;
-  });
-  if (!cookie) {
-    return null;
-  }
-  const serialized = cookie[1];
-  if (serialized.startsWith("[")) {
-    return JSON.parse(serialized);
-  }
-  throw new Error("not handled");
-}
